@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  database:
+    image: 'postgres:16.0'
+    restart: always
+    environment:
+      - 'POSTGRES_USER=brandon'
+      - 'POSTGRES_PASSWORD=password'
+      - 'POSTGRES_DB=pet_well'
+    ports:
+      - '5432:5432'
