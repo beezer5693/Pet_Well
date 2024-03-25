@@ -3,37 +3,35 @@ package dev.brandon.petwell.handlers;
 import dev.brandon.petwell.exceptions.ApplicationException;
 import dev.brandon.petwell.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.net.UnknownHostException;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
-@Slf4j
 public class GlobalExceptionHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ApplicationException.class)
     public ResponseEntity<Object> handleApplicationException(HttpServletRequest req, ApplicationException ex) {
-        log.error(ex.getMessage(), ex);
+        LOGGER.error(ex.getMessage(), ex);
 
-        ApiResponse<String> response = ApiResponse.failedResponse(ex.getHttpStatus().value(), ex.getMessage());
+        ApiResponse<String> response = ApiResponse.failedResponse(ex.getHttpStatus().value(), ex.getMessage(), req.getServletPath(), req.getMethod());
 
-        return ResponseEntity.status(ex.getHttpStatus()).body(generateErrorResponse(req, response));
+        return new ResponseEntity<>(response, ex.getHttpStatus());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     ResponseEntity<Object> handleValidationException(HttpServletRequest req, MethodArgumentNotValidException ex) {
-        log.error("Validation failed", ex);
+        LOGGER.error(ex.getMessage(), ex);
 
         Map<String, Object> errorMap = new HashMap<>();
 
@@ -41,31 +39,49 @@ public class GlobalExceptionHandler {
             errorMap.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
 
-        ApiResponse<Map<String, Object>> response = ApiResponse.failedResponse(ex.getStatusCode().value(), "Failed To Validate Request", null, errorMap);
+        ApiResponse<Map<String, Object>> response = ApiResponse.failedResponse(ex.getStatusCode().value(), "Failed To Validate Request", req.getServletPath(), req.getMethod(), null, errorMap);
 
-        return ResponseEntity.status(ex.getStatusCode()).body(generateErrorResponse(req, response));
+        return new ResponseEntity<>(response, ex.getStatusCode());
     }
 
-    @ExceptionHandler(Exception.class)
-    ResponseEntity<Object> handleAllException(HttpServletRequest req, Exception ex) {
-        log.error(ex.getMessage(), ex);
-
-        if (ex.getCause() instanceof UnknownHostException) {
-            ApiResponse<String> error = ApiResponse.failedResponse(HttpStatus.NOT_FOUND.value(), ex.getLocalizedMessage());
-            return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(RuntimeException.class)
+    ResponseEntity<Object> handleSecurityException(HttpServletRequest req, Exception ex) {
+        switch (ex.getClass().getSimpleName()) {
+            case "BadCredentialsException" -> {
+                LOGGER.error("Username or password is incorrect", ex);
+                ApiResponse<String> apiResponse = ApiResponse.failedResponse(HttpStatus.UNAUTHORIZED.value(), "Not Authorized", req.getServletPath(), req.getMethod());
+                return new ResponseEntity<>(apiResponse, HttpStatus.UNAUTHORIZED);
+            }
+            case "AccountStatusException" -> {
+                LOGGER.error("Account is locked", ex);
+                ApiResponse<String> apiResponse = ApiResponse.failedResponse(HttpStatus.UNAUTHORIZED.value(), "Not Authorized", req.getServletPath(), req.getMethod());
+                return new ResponseEntity<>(apiResponse, HttpStatus.UNAUTHORIZED);
+            }
+            case "AccessDeniedException" -> {
+                LOGGER.error("Not authorized to access this resource", ex);
+                ApiResponse<String> apiResponse = ApiResponse.failedResponse(HttpStatus.FORBIDDEN.value(), "Not Authorized", req.getServletPath(), req.getMethod());
+                return new ResponseEntity<>(apiResponse, HttpStatus.FORBIDDEN);
+            }
+            case "SignatureException" -> {
+                LOGGER.error("Invalid JWT signature", ex);
+                ApiResponse<String> apiResponse = ApiResponse.failedResponse(HttpStatus.FORBIDDEN.value(), "Not Authorized", req.getServletPath(), req.getMethod());
+                return new ResponseEntity<>(apiResponse, HttpStatus.FORBIDDEN);
+            }
+            case "ExpiredJwtException" -> {
+                LOGGER.error("JWT token has expired", ex);
+                ApiResponse<String> apiResponse = ApiResponse.failedResponse(HttpStatus.FORBIDDEN.value(), "Not Authorized", req.getServletPath(), req.getMethod());
+                return new ResponseEntity<>(apiResponse, HttpStatus.FORBIDDEN);
+            }
+            case "MalformedJwtException" -> {
+                LOGGER.error("Malformed JWT", ex);
+                ApiResponse<String> apiResponse = ApiResponse.failedResponse(HttpStatus.FORBIDDEN.value(), "Not Authorized", req.getServletPath(), req.getMethod());
+                return new ResponseEntity<>(apiResponse, HttpStatus.FORBIDDEN);
+            }
+            default -> {
+                LOGGER.error(ex.getMessage(), ex);
+                ApiResponse<String> apiResponse = ApiResponse.failedResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Unknown internal server error.", req.getServletPath(), req.getMethod());
+                return new ResponseEntity<>(apiResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
         }
-
-        ApiResponse<String> response = ApiResponse.failedResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getLocalizedMessage());
-
-        return new ResponseEntity<>(generateErrorResponse(req, response), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    private static Map<String, Object> generateErrorResponse(HttpServletRequest req, Object data) {
-        Map<String, Object> errorMap = new HashMap<>();
-        errorMap.put("path", req.getServletPath());
-        errorMap.put("method", req.getMethod());
-        errorMap.put("timestamp", Instant.now());
-        errorMap.put("response", data);
-        return errorMap;
     }
 }

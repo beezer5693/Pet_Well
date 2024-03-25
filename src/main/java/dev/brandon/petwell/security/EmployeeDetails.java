@@ -1,15 +1,18 @@
-package dev.brandon.petwell.employee;
+package dev.brandon.petwell.security;
 
-import lombok.RequiredArgsConstructor;
+import dev.brandon.petwell.employee.Employee;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 
-@RequiredArgsConstructor
 public class EmployeeDetails implements UserDetails {
 
     private final Employee employee;
+
+    public EmployeeDetails(Employee employee) {
+        this.employee = employee;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

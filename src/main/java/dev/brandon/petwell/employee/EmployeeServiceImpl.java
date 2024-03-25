@@ -2,79 +2,95 @@ package dev.brandon.petwell.employee;
 
 import dev.brandon.petwell.exceptions.ApplicationException;
 import dev.brandon.petwell.responses.ApiResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 @Service
-@RequiredArgsConstructor
-@Transactional
-@Slf4j
+@Transactional(readOnly = true)
 public class EmployeeServiceImpl implements EmployeeService {
+
+    private final static Logger LOGGER = LoggerFactory.getLogger(EmployeeServiceImpl.class);
 
     private final EmployeeRepository employeeRepository;
     private final EmployeeMapper employeeMapper;
 
-    @Override
-    public ApiResponse<EmployeeDto> saveEmployee(NewEmployeeRequest request) {
-        boolean isEmployeeEmailExisting = employeeRepository.existsByEmail(request.email());
-
-        if (isEmployeeEmailExisting) {
-            log.error("Employee with email {} already exists", request.email());
-            throw new ApplicationException(HttpStatus.CONFLICT, "Employee Already Exists", null);
-        }
-
-        Employee employee = employeeMapper.convertToEmployee(request);
-        Employee savedEmployee = employeeRepository.save(employee);
-        EmployeeDto employeeDto = employeeMapper.convertToDto(savedEmployee);
-
-        return ApiResponse.successfulResponse(HttpStatus.CREATED.value(), "Successful", employeeDto);
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, EmployeeMapper employeeMapper) {
+        this.employeeRepository = employeeRepository;
+        this.employeeMapper = employeeMapper;
     }
 
     @Override
-    public ApiResponse<List<EmployeeDto>> findAllEmployees() {
-        List<EmployeeDto> employees = employeeMapper.convertToDtoList(employeeRepository.findAll());
+    public ApiResponse<List<EmployeeDTO>> getAllEmployees() {
+        List<Employee> employees = employeeRepository.findAll();
 
         if (employees.isEmpty()) {
-            log.error("No employees found");
+            LOGGER.error("No employees found");
             throw new ApplicationException(HttpStatus.NOT_FOUND, "No Employees Found", null);
         }
 
-        return ApiResponse.successfulResponse("Successful", employees);
+        List<EmployeeDTO> employeeDTOList = employees
+                .stream()
+                .map(employeeMapper::mapToDTO)
+                .collect(Collectors.toList());
+
+        return ApiResponse.successfulResponse("Successful", employeeDTOList);
     }
 
     @Override
-    public ApiResponse<EmployeeDto> findEmployeeByID(Long id) {
-        EmployeeDto employeeDto = employeeMapper.convertToDto(getExistingEmployee(id));
+    public ApiResponse<EmployeeDTO> getEmployeeByID(Long id) {
+        EmployeeDTO employeeDto = employeeRepository.findById(id)
+                .map(employeeMapper::mapToDTO)
+                .orElseThrow(() -> throwEmployeeNotFoundException(id));
+
         return ApiResponse.successfulResponse("Successful", employeeDto);
     }
 
     @Override
-    public ApiResponse<EmployeeDto> updateEmployee(Long id, EmployeeDto employeeDto) {
-        Employee updatedEmployee = employeeMapper.convertToEmployee(employeeDto, getExistingEmployee(id));
-        Employee savedEmployee = employeeRepository.save(updatedEmployee);
-        EmployeeDto updatedEmployeeDto = employeeMapper.convertToDto(savedEmployee);
+    public ApiResponse<EmployeeDTO> updateEmployee(Long id, EmployeeDTO employeeDto) {
+        EmployeeDTO updatedEmployeeDTO = employeeRepository.findById(id)
+                .map(employee -> updateEmployeeWithDTOValues(employeeDto, employee))
+                .map(employeeRepository::save)
+                .map(employeeMapper::mapToDTO)
+                .orElseThrow(() -> throwEmployeeNotFoundException(id));
 
-        return ApiResponse.successfulResponse("Successful", updatedEmployeeDto);
+        return ApiResponse.successfulResponse("Successful", updatedEmployeeDTO);
     }
 
     @Override
     public ApiResponse<Object> deleteEmployee(Long id) {
-        employeeRepository.deleteById(getExistingEmployee(id).getId());
-        return ApiResponse.successfulResponse("Successful", Map.of("id", id));
+        Employee foundEmployee = employeeRepository.findById(id)
+                .orElseThrow(() -> throwEmployeeNotFoundException(id));
+
+        employeeRepository.deleteById(foundEmployee.getId());
+
+        return ApiResponse.successfulResponse("Successful");
     }
 
-    private Employee getExistingEmployee(Long id) {
-        return employeeRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.error("Employee with id {} not found.", id);
-                    return new ApplicationException(HttpStatus.NOT_FOUND, "Employee Not Found");
-                });
+    private static ApplicationException throwEmployeeNotFoundException(Long id) {
+        LOGGER.error("Employee with id {} not found.", id);
+        return new ApplicationException(HttpStatus.NOT_FOUND, "Employee Not Found");
+    }
+
+    private static Employee updateEmployeeWithDTOValues(EmployeeDTO employeeDTO, Employee employee) {
+        return new Employee(
+                employee.getId(),
+                returnNonNullValue(employeeDTO::firstName, employee::getFirstName),
+                returnNonNullValue(employeeDTO::lastName, employee::getLastName),
+                returnNonNullValue(employeeDTO::email, employee::getEmail),
+                employee.getPassword(),
+                employee.getJobTitle(),
+                employee.getRole());
+    }
+
+    private static String returnNonNullValue(Supplier<String> input, Supplier<String> existingValue) {
+        return input.get() != null ? input.get() : existingValue.get();
     }
 }

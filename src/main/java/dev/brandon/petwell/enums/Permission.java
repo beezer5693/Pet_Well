@@ -1,10 +1,5 @@
 package dev.brandon.petwell.enums;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
-@Getter
 enum Permission {
 
     ADMIN_READ("admin:read"),
@@ -17,4 +12,12 @@ enum Permission {
     MANAGER_DELETE("manager:delete");
 
     private final String permission;
+
+    Permission(String permission) {
+        this.permission = permission;
+    }
+
+    public String getPermission() {
+        return permission;
+    }
 }

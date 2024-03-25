@@ -1,10 +1,5 @@
 package dev.brandon.petwell.employee;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
-@Getter
 public enum JobTitle {
 
     VETERINARIAN("veterinarian"),
@@ -14,4 +9,12 @@ public enum JobTitle {
     RECEPTIONIST("receptionist");
 
     private final String jobTitle;
+
+    JobTitle(String jobTitle) {
+        this.jobTitle = jobTitle;
+    }
+
+    public String getJobTitle() {
+        return jobTitle;
+    }
 }

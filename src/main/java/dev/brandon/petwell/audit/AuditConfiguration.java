@@ -1,4 +1,4 @@
-package dev.brandon.petwell.config;
+package dev.brandon.petwell.audit;
 
 import dev.brandon.petwell.audit.ApplicationAuditAware;
 import org.springframework.context.annotation.Bean;

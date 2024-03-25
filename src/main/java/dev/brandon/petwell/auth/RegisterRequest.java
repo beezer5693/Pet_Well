@@ -1,11 +1,9 @@
-package dev.brandon.petwell.employee;
+package dev.brandon.petwell.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
-import lombok.Builder;
 
-@Builder
-public record NewEmployeeRequest(
+public record RegisterRequest(
         @NotNull(message = "First name cannot be null")
         @NotEmpty(message = "First name cannot be empty")
         @NotBlank(message = "First name cannot be blank")

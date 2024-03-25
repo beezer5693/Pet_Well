@@ -1,7 +1,5 @@
 package dev.brandon.petwell.employee;
 
-import dev.brandon.petwell.employee.Employee;
-import dev.brandon.petwell.employee.EmployeeRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -16,7 +14,7 @@ import java.util.List;
 
 import static dev.brandon.petwell.employee.JobTitle.VETERINARIAN;
 import static dev.brandon.petwell.employee.JobTitle.VETERINARIAN_TECHNICIAN;
-import static dev.brandon.petwell.enums.Role.*;
+import static dev.brandon.petwell.enums.Role.ADMIN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -49,19 +47,19 @@ class EmployeeRepositoryTest {
 
     @Test
     void Should_Save_An_Employee() {
-        Employee e1 = Employee.builder()
-                .firstName("Brandon")
-                .lastName("Bryan")
-                .email("brandon@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e1 = new Employee(
+                "Brandon",
+                "Bryan",
+                "brandon@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        entityManager.persist(e1);
+        employeeRepository.save(e1);
 
         Long savedEmployeeID = e1.getId();
-        Employee employee = entityManager.find(Employee.class, savedEmployeeID);
+
+        Employee employee = employeeRepository.findById(savedEmployeeID).orElse(null);
 
         assertNotNull(employee);
         assertEquals(savedEmployeeID, employee.getId());
@@ -70,26 +68,23 @@ class EmployeeRepositoryTest {
 
     @Test
     void Should_Return_A_List_Of_Employees() {
-        Employee e1 = Employee.builder()
-                .firstName("Brandon")
-                .lastName("Bryan")
-                .email("brandon@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e1 = new Employee(
+                "Brandon",
+                "Bryan",
+                "brandon@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        Employee e2 = Employee.builder()
-                .firstName("Arantxa")
-                .lastName("Leon")
-                .email("arantxa@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e2 = new Employee(
+                "Arantxa",
+                "Leon",
+                "arantxa@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        entityManager.persist(e1);
-        entityManager.persist(e2);
+        employeeRepository.saveAll(List.of(e1, e2));
 
         List<Employee> employees = employeeRepository.findAll();
 
@@ -99,102 +94,103 @@ class EmployeeRepositoryTest {
 
     @Test
     void Should_Find_Employee_By_ID() {
-        Employee e1 = Employee.builder()
-                .firstName("Brandon")
-                .lastName("Bryan")
-                .email("brandon@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e1 = new Employee(
+                "Brandon",
+                "Bryan",
+                "brandon@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        Employee e2 = Employee.builder()
-                .firstName("Arantxa")
-                .lastName("Leon")
-                .email("arantxa@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e2 = new Employee(
+                "Arantxa",
+                "Leon",
+                "arantxa@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        entityManager.persist(e1);
-        entityManager.persist(e2);
+        employeeRepository.saveAll(List.of(e1, e2));
 
-        Employee foundEmployee = entityManager.find(Employee.class, e1.getId());
+        Employee foundEmployee = employeeRepository.findById(e1.getId()).orElse(null);
 
         assertNotNull(foundEmployee);
+        assertEquals(e1.getFirstName(), foundEmployee.getFirstName());
         assertEquals(e1.getEmail(), foundEmployee.getEmail());
     }
 
     @Test
     void Should_Update_Employee_By_ID() {
-        Employee e1 = Employee.builder()
-                .firstName("Brandon")
-                .lastName("Bryan")
-                .email("brandon@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e1 = new Employee(
+                "Brandon",
+                "Bryan",
+                "brandon@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        Employee e2 = Employee.builder()
-                .firstName("Arantxa")
-                .lastName("Leon")
-                .email("arantxa@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e2 = new Employee(
+                "Arantxa",
+                "Leon",
+                "arantxa@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        entityManager.persist(e1);
-        entityManager.persist(e2);
+        employeeRepository.saveAll(List.of(e1, e2));
 
-        Employee updatedEmployee = Employee.builder()
-                .firstName("John")
-                .lastName("Doe")
-                .email("john@petwell")
-                .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
-                .build();
+        Employee updatedEmployee = new Employee(
+                "John",
+                "Doe",
+                "john@petwell.com",
+                "password",
+                VETERINARIAN_TECHNICIAN,
+                ADMIN);
 
-        Employee emp = entityManager.find(Employee.class, e2.getId());
+        Employee existingEmployee = employeeRepository.findById(e2.getId()).orElse(null);
 
-        emp.setFirstName(updatedEmployee.getFirstName());
-        emp.setLastName(updatedEmployee.getLastName());
-        emp.setEmail(updatedEmployee.getEmail());
+        assert existingEmployee != null;
 
-        entityManager.persist(emp);
+        Employee employee = new Employee(
+                existingEmployee.getId(),
+                updatedEmployee.getFirstName(),
+                updatedEmployee.getLastName(),
+                updatedEmployee.getEmail(),
+                existingEmployee.getPassword(),
+                existingEmployee.getJobTitle(),
+                existingEmployee.getRole());
 
-        Employee foundEmployee = entityManager.find(Employee.class, e2.getId());
+        employeeRepository.save(employee);
 
-        assertEquals(foundEmployee.getId(), emp.getId());
-        assertEquals(foundEmployee.getEmail(), emp.getEmail());
+        Employee foundEmployee = employeeRepository.findById(e2.getId()).orElse(null);
+
+        assert foundEmployee != null;
+
+        assertEquals(foundEmployee.getId(), existingEmployee.getId());
+        assertEquals(foundEmployee.getEmail(), existingEmployee.getEmail());
     }
 
     @Test
     void Should_Delete_Employee_By_ID() {
-        Employee e1 = Employee.builder()
-                .firstName("Brandon")
-                .lastName("Bryan")
-                .email("brandon@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e1 = new Employee(
+                "Brandon",
+                "Bryan",
+                "brandon@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        Employee e2 = Employee.builder()
-                .firstName("Arantxa")
-                .lastName("Leon")
-                .email("arantxa@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e2 = new Employee(
+                "Arantxa",
+                "Leon",
+                "arantxa@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        entityManager.persist(e1);
-        entityManager.persist(e2);
+        employeeRepository.saveAll(List.of(e1, e2));
 
-        entityManager.remove(e2);
+        employeeRepository.delete(e2);
 
         List<Employee> employees = employeeRepository.findAll();
 
@@ -205,16 +201,15 @@ class EmployeeRepositoryTest {
 
     @Test
     void Should_Return_True_If_Email_Exists_In_DB() {
-        Employee e1 = Employee.builder()
-                .firstName("Brandon")
-                .lastName("Bryan")
-                .email("brandon@petwell.com")
-                .password("password")
-                .jobTitle(VETERINARIAN)
-                .role(ADMIN)
-                .build();
+        Employee e1 = new Employee(
+                "Brandon",
+                "Bryan",
+                "brandon@petwell.com",
+                "password",
+                VETERINARIAN,
+                ADMIN);
 
-        entityManager.persist(e1);
+        employeeRepository.save(e1);
 
         boolean exists = employeeRepository.existsByEmail("brandon@petwell.com");
 

@@ -4,10 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.Builder;
 
-@Builder
-public record EmployeeDto(
+public record EmployeeDTO(
         @Size(min = 1, max = 50, message = "First name must be between 1 and 50 characters")
         @Pattern(regexp = "^[a-zA-Z]*$", message = "First name must contain only letters")
         @JsonProperty("first_name")

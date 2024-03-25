@@ -4,19 +4,13 @@ import dev.brandon.petwell.audit.Auditable;
 import dev.brandon.petwell.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.*;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Getter
-@Setter
-@ToString
 @Entity
 @Table(name = "employees")
-public class Employee extends Auditable {
+public class Employee extends Auditable implements Serializable {
 
     @Id
     @SequenceGenerator(name = "employees_generator", sequenceName = "employees_id_seq", allocationSize = 1)
@@ -25,6 +19,7 @@ public class Employee extends Auditable {
     private Long id;
 
     @Column(name = "first_name", nullable = false, length = 50)
+
     @NotNull(message = "First name cannot be null")
     @NotEmpty(message = "First name cannot be empty")
     @NotBlank(message = "First name cannot be blank")
@@ -42,7 +37,7 @@ public class Employee extends Auditable {
 
     @Column(unique = true, nullable = false)
     @NotNull(message = "Email cannot be null")
-    @NotEmpty(message = "Email is required")
+    @NotEmpty(message = "Email cannot be blank")
     @NotBlank(message = "Email cannot be blank")
     @Email(message = "Invalid email address")
     private String email;
@@ -64,12 +59,81 @@ public class Employee extends Auditable {
     @NotNull(message = "Role cannot be null")
     private Role role;
 
+    public Employee() {
+    }
+
+    public Employee(String firstName, String lastName, String email, String password, JobTitle jobTitle, Role role) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.jobTitle = jobTitle;
+        this.role = role;
+    }
+
+    public Employee(Long id, String firstName, String lastName, String email, String password, JobTitle jobTitle, Role role) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.jobTitle = jobTitle;
+        this.role = role;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public JobTitle getJobTitle() {
+        return jobTitle;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "id=" + id +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", jobTitle=" + jobTitle +
+                ", role=" + role +
+                '}';
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Employee employee = (Employee) o;
-        return Objects.equals(id, employee.id) && Objects.equals(firstName, employee.firstName) && Objects.equals(lastName, employee.lastName) && Objects.equals(email, employee.email) && Objects.equals(password, employee.password) && jobTitle == employee.jobTitle && role == employee.role;
+        return Objects.equals(id, employee.id)
+                && Objects.equals(firstName, employee.firstName)
+                && Objects.equals(lastName, employee.lastName)
+                && Objects.equals(email, employee.email)
+                && Objects.equals(password, employee.password)
+                && jobTitle == employee.jobTitle
+                && role == employee.role;
     }
 
     @Override

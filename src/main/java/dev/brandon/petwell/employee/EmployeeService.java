@@ -1,20 +1,15 @@
 package dev.brandon.petwell.employee;
 
-import dev.brandon.petwell.employee.EmployeeDto;
-import dev.brandon.petwell.employee.NewEmployeeRequest;
 import dev.brandon.petwell.responses.ApiResponse;
 
 import java.util.List;
 
 public interface EmployeeService {
+    ApiResponse<List<EmployeeDTO>> getAllEmployees();
 
-    ApiResponse<EmployeeDto> saveEmployee(NewEmployeeRequest request);
+    ApiResponse<EmployeeDTO> getEmployeeByID(Long id);
 
-    ApiResponse<EmployeeDto> findEmployeeByID(Long id);
-
-    ApiResponse<List<EmployeeDto>> findAllEmployees();
-
-    ApiResponse<EmployeeDto> updateEmployee(Long id, EmployeeDto employeeDTO);
+    ApiResponse<EmployeeDTO> updateEmployee(Long id, EmployeeDTO employeeDto);
 
     ApiResponse<Object> deleteEmployee(Long id);
 }
