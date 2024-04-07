@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: petwell-backend
+  profiles:
+    active: dev
