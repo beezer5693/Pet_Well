@@ -15,7 +15,6 @@ public class AuditAware implements AuditorAware<String> {
         if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
             return Optional.empty();
         }
-
         return Optional.ofNullable(authentication.getName());
     }
 }

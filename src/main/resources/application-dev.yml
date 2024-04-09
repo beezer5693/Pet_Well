@@ -1,37 +1,15 @@
-spring:
-  application:
-    name: petwell-backend
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/pet_well
-    username: brandon
-    password: password
-  jpa:
-    database: postgresql
-    generate-ddl: true
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
+# Database
+POSTGRESQL_USERNAME: brandon
+POSTGRESQL_PASSWORD: password
+POSTGRESQL_HOST: 127.0.0.1
+POSTGRESQL_PORT: 5432
+POSTGRESQL_DATABASE: pet_well
 
-management:
-  endpoint:
-    health:
-      show-details: always
-  endpoints:
-    web:
-      exposure:
-        include: health
+#Server
+CONTAINER_PORT: 9090
+ACTIVE_PROFILE: dev
 
-token:
-  secret-key: a86e7e2786d280e6b5b1f75776dff7e8a18a41cf989304cb5fb0e58522eaadca
-  token-expiration: 900000
+#JWT
+SECRET_KEY: a86e7e2786d280e6b5b1f75776dff7e8a18a41cf989304cb5fb0e58522eaadca
+EXPIRY_DURATION: 3600
 
-redis-cache:
-  host-name: localhost
-  port: 6379
-
-logging:
-  level:
-    dev.brandon.petwellbackend: DEBUG
-    org.springframework.web: DEBUG
-    org.springframework.security: DEBUG

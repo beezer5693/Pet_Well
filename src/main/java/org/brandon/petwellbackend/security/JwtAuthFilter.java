@@ -5,10 +5,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.brandon.petwellbackend.cache.CacheService;
-import org.brandon.petwellbackend.employee.Employee;
-import org.brandon.petwellbackend.employee.EmployeeRepository;
-import org.brandon.petwellbackend.exceptions.ApplicationException;
+import org.brandon.petwellbackend.cache.CacheStore;
+import org.brandon.petwellbackend.entity.Employee;
+import org.brandon.petwellbackend.exception.ApplicationException;
+import org.brandon.petwellbackend.repository.EmployeeRepository;
+import org.brandon.petwellbackend.service.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -31,29 +32,25 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private final UserDetailsService userDetailsService;
     private final EmployeeRepository employeeRepository;
     private final HandlerExceptionResolver handlerExceptionResolver;
     private final JwtService jwtService;
-    private final CacheService cacheService;
+    private final CacheStore<String, String> tokenCache;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) {
+        LOGGER.info("Started jwt request filtering...");
         if (!isMatchingEmployeeRequest(request)) {
             continueFilterChain(request, response, filterChain);
             return;
         }
-
         try {
-            LOGGER.info("Started jwt request filtering...");
-
             String accessToken = extractTokenFromHeader(request);
             String email = extractUsernameFromToken(accessToken);
             Optional<Employee> foundEmployee = employeeRepository.findByEmail(email);
-
             if (foundEmployee.isEmpty()) {
                 LOGGER.warn("Employee {} not found", email);
                 throw new ApplicationException(HttpStatus.UNAUTHORIZED, "Not authorized");
@@ -61,7 +58,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (isSecurityContextHolderNull()) {
                 authenticateRequest(accessToken, foundEmployee.get(), request);
             }
-
             continueFilterChain(request, response, filterChain);
         } catch (Exception ex) {
             LOGGER.error("Exception while authenticating request: {}", ex.getMessage());
@@ -87,26 +83,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isTokenBlacklisted(Employee employee, String accessToken) {
-        String cachedToken = cacheService.getCachedToken(employee);
+        String cachedToken = tokenCache.get("token_" + employee.getEmail());
         boolean isTokenOnBlacklist = cachedToken != null && cachedToken.equals(accessToken);
-
         if (isTokenOnBlacklist) {
             LOGGER.warn("Access Token validation failed - token blacklisted");
         } else {
             LOGGER.info("Access token validation successful - token not blacklisted");
         }
-
         return isTokenOnBlacklist;
     }
 
     private void authenticateRequest(String accessToken, Employee employee, HttpServletRequest request) {
         UserDetails userDetails = retrieveUserDetailsByEmail(employee.getEmail());
-
         if (!isTokenValid(accessToken, userDetails, employee)) {
             LOGGER.warn("Failed to authenticate request");
             throw new ApplicationException(HttpStatus.UNAUTHORIZED, "Not authorized");
         }
-
         setSecurityContextHolder(userDetails, request);
     }
 
@@ -125,12 +117,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static String getAuthorizationHeader(HttpServletRequest request) {
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-
         if (isAuthHeaderMissingOrInvalid(authHeader)) {
             LOGGER.warn("Invalid Authorization header: {}", authHeader);
             throw new ApplicationException(HttpStatus.UNAUTHORIZED, "Not authorized");
         }
-
         return authHeader;
     }
 

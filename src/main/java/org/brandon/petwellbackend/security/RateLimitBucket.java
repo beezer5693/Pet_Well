@@ -9,7 +9,6 @@ import java.time.Duration;
 @Getter
 @Component
 public class RateLimitBucket {
-
     private static final int TOKEN_CAPACITY = 10;
     private static final int REFILL_TOKENS = 10;
 

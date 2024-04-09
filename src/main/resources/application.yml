@@ -2,4 +2,37 @@ spring:
   application:
     name: petwell-backend
   profiles:
-    active: dev
+    active: ${ACTIVE_PROFILE:dev}
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${POSTGRESQL_HOST}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
+    username: ${POSTGRESQL_USERNAME}
+    password: ${POSTGRESQL_PASSWORD}
+  jpa:
+    database: postgresql
+    generate-ddl: true
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+server:
+  port: ${CONTAINER_PORT:8080}
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+token:
+  secret-key: ${SECRET_KEY}
+  token-expiration: ${EXPIRY_DURATION}
+
+logging:
+  level:
+    dev.brandon.petwellbackend: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG

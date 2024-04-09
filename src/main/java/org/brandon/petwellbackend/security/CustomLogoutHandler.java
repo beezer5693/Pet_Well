@@ -3,9 +3,10 @@ package org.brandon.petwellbackend.security;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.brandon.petwellbackend.cache.CacheService;
-import org.brandon.petwellbackend.employee.Employee;
-import org.brandon.petwellbackend.employee.EmployeeRepository;
+import org.brandon.petwellbackend.cache.CacheStore;
+import org.brandon.petwellbackend.entity.Employee;
+import org.brandon.petwellbackend.repository.EmployeeRepository;
+import org.brandon.petwellbackend.service.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -17,34 +18,27 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class CustomLogoutHandler implements LogoutHandler {
-
     private final static Logger LOGGER = LoggerFactory.getLogger(CustomLogoutHandler.class);
 
     private final JwtService jwtService;
     private final EmployeeRepository employeeRepository;
-    private final CacheService cacheService;
+    private final CacheStore<String, String> tokenCache;
 
     @Override
     public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
         LOGGER.info("Started logout request...");
-
         String authHeader = extractAuthorizationHeader(request);
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             LOGGER.warn("Invalid or missing Authorization header");
             return;
         }
-
         String accessToken = extractTokenFromAuthHeader(authHeader);
         String email = extractEmployeeEmailFromToken(accessToken);
-
         Employee loggedInEmployee = getEmployeeByEmail(email);
-
         if (loggedInEmployee == null) {
             LOGGER.warn("The username extracted from the token is not valid.");
             return;
         }
-
         blacklistToken(accessToken, loggedInEmployee);
         clearSecurityContext();
     }
@@ -54,7 +48,7 @@ public class CustomLogoutHandler implements LogoutHandler {
     }
 
     private void blacklistToken(String accessToken, Employee employee) {
-        cacheService.cacheToken(accessToken, employee);
+        tokenCache.put("token_" + employee.getEmail(), accessToken);
     }
 
     private Employee getEmployeeByEmail(String email) {

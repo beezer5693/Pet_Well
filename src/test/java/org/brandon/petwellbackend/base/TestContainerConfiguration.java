@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 public abstract class TestContainerConfiguration {
-
     @Container
     @ServiceConnection
     static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer<>("postgres:16.0");
