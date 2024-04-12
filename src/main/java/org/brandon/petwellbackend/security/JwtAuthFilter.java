@@ -6,9 +6,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.brandon.petwellbackend.cache.CacheStore;
-import org.brandon.petwellbackend.entity.Employee;
+import org.brandon.petwellbackend.entity.UserEntity;
 import org.brandon.petwellbackend.exception.ApplicationException;
-import org.brandon.petwellbackend.repository.EmployeeRepository;
+import org.brandon.petwellbackend.repository.UserEntityRepository;
 import org.brandon.petwellbackend.service.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private final UserDetailsService userDetailsService;
-    private final EmployeeRepository employeeRepository;
+    private final UserEntityRepository userEntityRepository;
     private final HandlerExceptionResolver handlerExceptionResolver;
     private final JwtService jwtService;
     private final CacheStore<String, String> tokenCache;
@@ -43,20 +43,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) {
         LOGGER.info("Started jwt request filtering...");
-        if (!isMatchingEmployeeRequest(request)) {
+        if (!isMatchingRequestUrl(request)) {
             continueFilterChain(request, response, filterChain);
             return;
         }
         try {
             String accessToken = extractTokenFromHeader(request);
             String email = extractUsernameFromToken(accessToken);
-            Optional<Employee> foundEmployee = employeeRepository.findByEmail(email);
-            if (foundEmployee.isEmpty()) {
-                LOGGER.warn("Employee {} not found", email);
+            Optional<UserEntity> foundUser = userEntityRepository.findByEmail(email);
+            if (foundUser.isEmpty()) {
+                LOGGER.warn("User {} not found", email);
                 throw new ApplicationException(HttpStatus.UNAUTHORIZED, "Not authorized");
             }
             if (isSecurityContextHolderNull()) {
-                authenticateRequest(accessToken, foundEmployee.get(), request);
+                authenticateRequest(accessToken, foundUser.get(), request);
             }
             continueFilterChain(request, response, filterChain);
         } catch (Exception ex) {
@@ -69,21 +69,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         return jwtService.extractUsername(accessToken);
     }
 
-    private boolean isTokenValid(String accessToken, UserDetails userDetails, Employee employee) {
-        return jwtService.isTokenValid(accessToken, userDetails) && !isTokenBlacklisted(employee, accessToken);
+    private boolean isTokenValid(String accessToken, UserDetails userDetails, UserEntity userEntity) {
+        return jwtService.isTokenValid(accessToken, userDetails) && !isTokenBlacklisted(userEntity, accessToken);
     }
 
     private UserDetails retrieveUserDetailsByEmail(String email) {
         return userDetailsService.loadUserByUsername(email);
     }
 
-    private boolean isMatchingEmployeeRequest(HttpServletRequest request) {
-        final RequestMatcher employeeRequestMatcher = new AntPathRequestMatcher("/api/v1/employees/**");
-        return employeeRequestMatcher.matches(request);
+    private boolean isMatchingRequestUrl(HttpServletRequest request) {
+        final RequestMatcher userRequestMatcher = new AntPathRequestMatcher("/api/v1/users/**");
+        return userRequestMatcher.matches(request);
     }
 
-    private boolean isTokenBlacklisted(Employee employee, String accessToken) {
-        String cachedToken = tokenCache.get("token_" + employee.getEmail());
+    private boolean isTokenBlacklisted(UserEntity userEntity, String accessToken) {
+        String cachedToken = tokenCache.get("token_" + userEntity.getEmail());
         boolean isTokenOnBlacklist = cachedToken != null && cachedToken.equals(accessToken);
         if (isTokenOnBlacklist) {
             LOGGER.warn("Access Token validation failed - token blacklisted");
@@ -93,9 +93,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         return isTokenOnBlacklist;
     }
 
-    private void authenticateRequest(String accessToken, Employee employee, HttpServletRequest request) {
-        UserDetails userDetails = retrieveUserDetailsByEmail(employee.getEmail());
-        if (!isTokenValid(accessToken, userDetails, employee)) {
+    private void authenticateRequest(String accessToken, UserEntity userEntity, HttpServletRequest request) {
+        UserDetails userDetails = retrieveUserDetailsByEmail(userEntity.getEmail());
+        if (!isTokenValid(accessToken, userDetails, userEntity)) {
             LOGGER.warn("Failed to authenticate request");
             throw new ApplicationException(HttpStatus.UNAUTHORIZED, "Not authorized");
         }

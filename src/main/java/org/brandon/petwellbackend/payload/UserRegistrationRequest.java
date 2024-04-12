@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
 @Builder
-public record EmployeeRegistrationRequest(
+public record UserRegistrationRequest(
         @NotBlank(message = "First name is required")
         @JsonProperty("first_name")
         String firstname,
@@ -19,11 +19,6 @@ public record EmployeeRegistrationRequest(
         String email,
         @NotBlank(message = "Password is required")
         @Size(min = 8, message = "Password must be at least 8 characters long")
-        String password,
-        @NotBlank(message = "Job title is required")
-        @JsonProperty("job_title")
-        String jobTitle,
-        @NotBlank(message = "Role is required")
-        String role
+        String password
 ) {
 }

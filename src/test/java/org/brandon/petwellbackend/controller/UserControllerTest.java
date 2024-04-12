@@ -1,12 +1,14 @@
 package org.brandon.petwellbackend.controller;
 
 import org.brandon.petwellbackend.base.BaseControllerTestConfiguration;
-import org.brandon.petwellbackend.entity.Employee;
+import org.brandon.petwellbackend.entity.UserEntity;
 import org.brandon.petwellbackend.entity.Role;
 import org.brandon.petwellbackend.exception.EntityAlreadyExistsException;
 import org.brandon.petwellbackend.exception.EntityNotFoundException;
-import org.brandon.petwellbackend.payload.*;
-import org.brandon.petwellbackend.service.EmployeeService;
+import org.brandon.petwellbackend.payload.UserDTO;
+import org.brandon.petwellbackend.payload.UserRegistrationRequest;
+import org.brandon.petwellbackend.payload.Response;
+import org.brandon.petwellbackend.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -15,14 +17,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.List;
 import java.util.UUID;
 
-import static org.brandon.petwellbackend.enums.JobTitle.VETERINARIAN;
 import static org.brandon.petwellbackend.enums.RoleType.ADMIN;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
@@ -34,54 +34,50 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @DirtiesContext
-class EmployeeControllerTest extends BaseControllerTestConfiguration {
+class UserControllerTest extends BaseControllerTestConfiguration {
     @MockBean
-    private EmployeeService employeeService;
+    private UserService userService;
 
-    private static final String BASE_AUTH_URL = "/api/v1/auth/employees";
-    private static final String BASE_URL = "/api/v1/employees";
+    private static final String BASE_AUTH_URL = "/api/v1/auth/users";
+    private static final String BASE_URL = "/api/v1/users";
 
-    private EmployeeDTO employeeDTO;
+    private UserDTO userDTO;
 
-    private Employee employee;
+    private UserEntity userEntity;
 
     @BeforeEach
     void setUp() {
-        employee = Employee.builder()
-                .userId(UUID.randomUUID().toString())
+        userEntity = UserEntity.builder()
+                .userID(UUID.randomUUID().toString())
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
                 .password("password123")
-                .jobTitle(VETERINARIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
-        employeeDTO = EmployeeDTO.builder()
-                .userId(employee.getUserId())
+        userDTO = UserDTO.builder()
+                .userID(userEntity.getUserID())
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
-                .jobTitle("Veterinarian")
                 .role("Admin")
                 .build();
     }
 
     @Test
-    void should_CreateEmployee_When_ValidRegistrationDetailsProvided() throws Exception {
+    void should_CreateUser_When_ValidRegistrationDetailsProvided() throws Exception {
         // Arrange
-        EmployeeRegistrationRequest registrationDTO = EmployeeRegistrationRequest.builder()
+        UserRegistrationRequest registrationDTO = UserRegistrationRequest.builder()
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
                 .password("password123")
-                .jobTitle("veterinarian")
-                .role("admin")
                 .build();
 
-        Response<EmployeeDTO> expectedResponse = Response.success(employeeDTO, HttpStatus.CREATED);
+        Response<UserDTO> expectedResponse = Response.success(userDTO, HttpStatus.CREATED);
         String expectedJsonResponse = objectMapper.writeValueAsString(expectedResponse);
-        when(employeeService.registerEmployee(registrationDTO)).thenReturn(employee);
+        when(userService.registerUser(registrationDTO)).thenReturn(userEntity);
 
         // Act
         ResultActions response = mockMvc.perform(post(BASE_AUTH_URL.concat("/register"))
@@ -95,20 +91,18 @@ class EmployeeControllerTest extends BaseControllerTestConfiguration {
     }
 
     @Test
-    void should_ReturnConflictStatus_When_RegisteringEmployeeWithExistingEmail() throws Exception {
+    void should_ReturnConflictStatus_When_RegisteringUserWithExistingEmail() throws Exception {
         // Arrange
-        EmployeeRegistrationRequest registrationDTO = EmployeeRegistrationRequest.builder()
+        UserRegistrationRequest registrationDTO = UserRegistrationRequest.builder()
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@example.com")
                 .password("password123")
-                .jobTitle("veterinarian")
-                .role("admin")
                 .build();
 
 
-        when(employeeService.registerEmployee(registrationDTO))
-                .thenThrow(new EntityAlreadyExistsException("Employee with email " + registrationDTO.email() + " already exists",
+        when(userService.registerUser(registrationDTO))
+                .thenThrow(new EntityAlreadyExistsException("User with email " + registrationDTO.email() + " already exists",
                         registrationDTO.email()));
 
         // Act
@@ -122,51 +116,51 @@ class EmployeeControllerTest extends BaseControllerTestConfiguration {
     }
 
     @Test
-    void should_ReturnListOfEmployeeDTOs_When_AllEmployeesRequested() throws Exception {
-        List<EmployeeDTO> employeeDTOs = List.of(employeeDTO);
+    void should_ReturnListOfUserDTOs_When_AllUsersRequested() throws Exception {
+        List<UserDTO> userDTOS = List.of(userDTO);
 
-        when(employeeService.getAllEmployees())
-                .thenReturn(employeeDTOs);
+        when(userService.getAllUsers())
+                .thenReturn(userDTOS);
 
         ResultActions response = mockMvc.perform(get(BASE_URL).header(HttpHeaders.AUTHORIZATION, mockAdminToken));
 
         response.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(APPLICATION_JSON))
-                .andExpect(jsonPath("$.data.[0].first_name").value(employeeDTO.firstname()))
-                .andExpect(jsonPath("$.data.[0].last_name").value(employeeDTO.lastname()))
-                .andExpect(jsonPath("$.data.[0].email").value(employeeDTO.email()))
-                .andExpect(jsonPath("$.data.[0].job_title").value(employeeDTO.jobTitle()));
+                .andExpect(jsonPath("$.data.[0].first_name").value(userDTO.firstname()))
+                .andExpect(jsonPath("$.data.[0].last_name").value(userDTO.lastname()))
+                .andExpect(jsonPath("$.data.[0].email").value(userDTO.email()));
     }
 
     @Test
-    void should_ReturnEmployeeDTO_When_GivenValidEmployeeID() throws Exception {
-        Long id = 1L;
+    void should_ReturnUserDTO_When_GivenValidUserID() throws Exception {
+        String id = UUID.randomUUID().toString();
 
-        when(employeeService.getEmployeeById(id))
-                .thenReturn(employeeDTO);
+        when(userService.getUserByUserID(id))
+                .thenReturn(userDTO);
 
         ResultActions response = mockMvc.perform(get(BASE_URL + "/{id}", id).header(HttpHeaders.AUTHORIZATION, mockAdminToken));
 
         response.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(APPLICATION_JSON))
-                .andExpect(jsonPath("$.data.first_name").value(employeeDTO.firstname()))
-                .andExpect(jsonPath("$.data.last_name").value(employeeDTO.lastname()))
-                .andExpect(jsonPath("$.data.email").value(employeeDTO.email()))
-                .andExpect(jsonPath("$.data.job_title").value(employeeDTO.jobTitle()));
+                .andExpect(jsonPath("$.data.first_name").value(userDTO.firstname()))
+                .andExpect(jsonPath("$.data.last_name").value(userDTO.lastname()))
+                .andExpect(jsonPath("$.data.email").value(userDTO.email()));
     }
 
     @Test
-    void should_UpdateEmployee_When_GivenValidEmployeeIdAndEmployeeDto() throws Exception {
-        employee.setId(1L);
+    void should_UpdateUser_When_GivenValidUserIdAndUserDto() throws Exception {
+        String id = UUID.randomUUID().toString();
 
-        when(employeeService.updateEmployee(employee.getId(), employeeDTO)).thenReturn(employeeDTO);
+        userEntity.setUserID(id);
 
-        ResultActions response = mockMvc.perform(put(BASE_URL + "/{id}", employee.getId())
+        when(userService.updateUser(userEntity.getUserID(), userDTO)).thenReturn(userDTO);
+
+        ResultActions response = mockMvc.perform(put(BASE_URL + "/{id}", id)
                 .header(HttpHeaders.AUTHORIZATION, mockAdminToken)
                 .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(employeeDTO)));
+                .content(objectMapper.writeValueAsString(userDTO)));
 
         response.andDo(print())
                 .andExpect(status().isOk())
@@ -175,10 +169,10 @@ class EmployeeControllerTest extends BaseControllerTestConfiguration {
     }
 
     @Test
-    void should_DeleteEmployee_When_GivenValidEmployeeId() throws Exception {
-        Long id = 1L;
+    void should_DeleteUser_When_GivenValidUserId() throws Exception {
+        String id = UUID.randomUUID().toString();
 
-        doNothing().when(employeeService).deleteEmployee(id);
+        doNothing().when(userService).deleteUser(id);
 
         ResultActions response = mockMvc.perform(delete(BASE_URL + "/{id}", id).header(HttpHeaders.AUTHORIZATION, mockAdminToken));
 
@@ -189,11 +183,11 @@ class EmployeeControllerTest extends BaseControllerTestConfiguration {
     }
 
     @Test
-    void should_ReturnNotFoundStatus_When_GivenInvalidEmployeeId() throws Exception {
-        Long invalidId = 0L;
+    void should_ReturnNotFoundStatus_When_GivenInvalidUserId() throws Exception {
+        String invalidId = UUID.randomUUID().toString();
 
-        when(employeeService.getEmployeeById(invalidId))
-                .thenThrow(new EntityNotFoundException(String.format("Failed to retrieve employee with ID: %d", invalidId), invalidId));
+        when(userService.getUserByUserID(invalidId))
+                .thenThrow(new EntityNotFoundException(String.format("Could not find employee: %s", invalidId), invalidId));
 
         ResultActions response = mockMvc.perform(get(BASE_URL + "/{id}", invalidId).header(HttpHeaders.AUTHORIZATION, mockAdminToken));
 

@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
 @Builder
-public record EmployeeLoginRequest(
+public record UserLoginRequest(
         @NotBlank(message = "Email is required")
         @Email(message = "Invalid email")
         String email,

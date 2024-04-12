@@ -4,8 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.brandon.petwellbackend.cache.CacheStore;
-import org.brandon.petwellbackend.entity.Employee;
-import org.brandon.petwellbackend.repository.EmployeeRepository;
+import org.brandon.petwellbackend.entity.UserEntity;
+import org.brandon.petwellbackend.repository.UserEntityRepository;
 import org.brandon.petwellbackend.service.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,7 @@ public class CustomLogoutHandler implements LogoutHandler {
     private final static Logger LOGGER = LoggerFactory.getLogger(CustomLogoutHandler.class);
 
     private final JwtService jwtService;
-    private final EmployeeRepository employeeRepository;
+    private final UserEntityRepository userEntityRepository;
     private final CacheStore<String, String> tokenCache;
 
     @Override
@@ -33,13 +33,13 @@ public class CustomLogoutHandler implements LogoutHandler {
             return;
         }
         String accessToken = extractTokenFromAuthHeader(authHeader);
-        String email = extractEmployeeEmailFromToken(accessToken);
-        Employee loggedInEmployee = getEmployeeByEmail(email);
-        if (loggedInEmployee == null) {
+        String email = getUserEmailFromToken(accessToken);
+        UserEntity loggedInUserEntity = getUserByEmail(email);
+        if (loggedInUserEntity == null) {
             LOGGER.warn("The username extracted from the token is not valid.");
             return;
         }
-        blacklistToken(accessToken, loggedInEmployee);
+        blacklistToken(accessToken, loggedInUserEntity);
         clearSecurityContext();
     }
 
@@ -47,20 +47,20 @@ public class CustomLogoutHandler implements LogoutHandler {
         return authHeader.substring(7);
     }
 
-    private void blacklistToken(String accessToken, Employee employee) {
-        tokenCache.put("token_" + employee.getEmail(), accessToken);
+    private void blacklistToken(String accessToken, UserEntity userEntity) {
+        tokenCache.put("token_" + userEntity.getEmail(), accessToken);
     }
 
-    private Employee getEmployeeByEmail(String email) {
-        return employeeRepository.findByEmail(email).orElse(null);
+    private UserEntity getUserByEmail(String email) {
+        return userEntityRepository.findByEmail(email).orElse(null);
     }
 
     private static void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 
-    private String extractEmployeeEmailFromToken(String accessToken) {
-        LOGGER.info("Extracting employee email from token");
+    private String getUserEmailFromToken(String accessToken) {
+        LOGGER.info("Extracting user email from token");
         return jwtService.extractUsername(accessToken);
     }
 

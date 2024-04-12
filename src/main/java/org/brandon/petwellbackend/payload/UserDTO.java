@@ -7,9 +7,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
 @Builder
-public record EmployeeDTO(
+public record UserDTO(
         @JsonProperty("user_id")
-        String userId,
+        String userID,
         @Size(min = 1, max = 50, message = "First name must be between 1 and 50 characters")
         @Pattern(regexp = "^[a-zA-Z]*$", message = "First name must contain only letters")
         @JsonProperty("first_name")
@@ -20,8 +20,6 @@ public record EmployeeDTO(
         String lastname,
         @Email(message = "Invalid email")
         String email,
-        @JsonProperty("job_title")
-        String jobTitle,
         String role,
         @JsonProperty("is_account_non_expired")
         boolean isAccountNonExpired,

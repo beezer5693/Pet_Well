@@ -3,12 +3,10 @@ package org.brandon.petwellbackend.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.brandon.petwellbackend.domain.Auditable;
-import org.brandon.petwellbackend.enums.JobTitle;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -22,9 +20,9 @@ import java.util.Collection;
 @ToString
 @Entity
 @Table(name = "employees")
-public class Employee extends Auditable implements UserDetails {
+public class UserEntity extends Auditable implements UserDetails {
     @Column(updatable = false, unique = true, nullable = false)
-    private String userId;
+    private String userID;
 
     @Column(name = "first_name", nullable = false, length = 50)
     @NotBlank(message = "First name is required")
@@ -43,11 +41,6 @@ public class Employee extends Auditable implements UserDetails {
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters long")
     private String password;
-
-    @Column(name = "job_title", nullable = false)
-    @NotNull(message = "Job title is required")
-    @Enumerated(EnumType.STRING)
-    private JobTitle jobTitle;
 
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(

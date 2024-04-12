@@ -1,7 +1,7 @@
 package org.brandon.petwellbackend.repository;
 
-import org.brandon.petwellbackend.entity.Employee;
 import org.brandon.petwellbackend.entity.Role;
+import org.brandon.petwellbackend.entity.UserEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -16,19 +16,18 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.brandon.petwellbackend.enums.RoleType.ADMIN;
-import static org.brandon.petwellbackend.enums.JobTitle.VETERINARIAN_TECHNICIAN;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class EmployeeRepositoryTest {
+class UserEntityRepositoryTest {
     @Container
     @ServiceConnection
     static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:latest");
 
     @Autowired
-    private EmployeeRepository employeeRepository;
+    private UserEntityRepository userEntityRepository;
 
     @Test
     void shouldEstablishConnectionToPostgresContainer() {
@@ -39,194 +38,185 @@ class EmployeeRepositoryTest {
     @Test
     void should_FindNoEmployees_When_RepositoryIsEmpty() {
         // Arrange & Act
-        List<Employee> employeeEntities = employeeRepository.findAll();
+        List<UserEntity> userEntityEntities = userEntityRepository.findAll();
 
         // Assert
-        assertThat(employeeEntities).withFailMessage("The repository should be empty but it isn't.").isEmpty();
+        assertThat(userEntityEntities).withFailMessage("The repository should be empty but it isn't.").isEmpty();
     }
 
     @Test
     void should_SaveEmployee_When_ValidEmployeeGiven() {
         // Arrange
-        Employee e1 = Employee.builder()
-                .userId(UUID.randomUUID().toString())
+        UserEntity e1 = UserEntity.builder()
+                .userID(UUID.randomUUID().toString())
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
                 .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
         // Act
-        Employee savedEmployee = employeeRepository.save(e1);
-        Long savedEmployeeID = savedEmployee.getId();
-        Employee retrievedEmployee = employeeRepository.findById(savedEmployeeID).orElse(null);
+        UserEntity savedUserEntity = userEntityRepository.save(e1);
+        Long savedEmployeeID = savedUserEntity.getId();
+        UserEntity retrievedUserEntity = userEntityRepository.findById(savedEmployeeID).orElse(null);
 
         // Assert
-        assertNotNull(retrievedEmployee);
-        assertEquals(savedEmployeeID, retrievedEmployee.getId());
-        assertEquals("john@petwell.com", retrievedEmployee.getEmail());
+        assertNotNull(retrievedUserEntity);
+        assertEquals(savedEmployeeID, retrievedUserEntity.getId());
+        assertEquals("john@petwell.com", retrievedUserEntity.getEmail());
     }
 
     @Test
     void should_ReturnListOfAllSavedEmployees_When_RepositoryIsNotEmpty() {
         // Arrange
-        Employee e1 = Employee.builder()
-                .userId(UUID.randomUUID().toString())
+        UserEntity e1 = UserEntity.builder()
+                .userID(UUID.randomUUID().toString())
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
                 .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
-        Employee e2 = Employee.builder()
-                .userId(UUID.randomUUID().toString())
+        UserEntity e2 = UserEntity.builder()
+                .userID(UUID.randomUUID().toString())
                 .firstname("Mary")
                 .lastname("Smith")
                 .email("mary@petwell.com")
                 .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
         // Act
-        employeeRepository.saveAll(List.of(e1, e2));
-        List<Employee> employeeEntities = employeeRepository.findAll();
+        userEntityRepository.saveAll(List.of(e1, e2));
+        List<UserEntity> userEntityEntities = userEntityRepository.findAll();
 
         // Assert
-        assertTrue(employeeEntities.containsAll(List.of(e1, e2)));
-        assertEquals(2, employeeEntities.size());
+        assertTrue(userEntityEntities.containsAll(List.of(e1, e2)));
+        assertEquals(2, userEntityEntities.size());
     }
 
     @Test
     void should_FindEmployeeById_When_ValidEmployeeIDGiven() {
         // Arrange
-        Employee e1 = Employee.builder()
-                .userId(UUID.randomUUID().toString())
+        UserEntity e1 = UserEntity.builder()
+                .userID(UUID.randomUUID().toString())
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
                 .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
         // Act
-        employeeRepository.save(e1);
-        Employee foundEmployee = employeeRepository.findById(e1.getId()).orElse(null);
+        userEntityRepository.save(e1);
+        UserEntity foundUserEntity = userEntityRepository.findById(e1.getId()).orElse(null);
 
         // Assert
-        assertNotNull(foundEmployee);
-        assertEquals(e1.getFirstname(), foundEmployee.getFirstname());
-        assertEquals(e1.getLastname(), foundEmployee.getLastname());
-        assertEquals(e1.getEmail(), foundEmployee.getEmail());
+        assertNotNull(foundUserEntity);
+        assertEquals(e1.getFirstname(), foundUserEntity.getFirstname());
+        assertEquals(e1.getLastname(), foundUserEntity.getLastname());
+        assertEquals(e1.getEmail(), foundUserEntity.getEmail());
     }
 
     @Test
     void should_FindEmployeeByEmail_When_ValidEmployeeEmailGiven() {
         // Arrange
-        Employee e1 = Employee.builder()
-                .userId(UUID.randomUUID().toString())
+        UserEntity e1 = UserEntity.builder()
+                .userID(UUID.randomUUID().toString())
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
                 .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
         // Act
-        Employee savedEmployee = employeeRepository.save(e1);
-        Employee foundEmployee = employeeRepository.findByEmail(savedEmployee.getEmail()).orElse(new Employee());
+        UserEntity savedUserEntity = userEntityRepository.save(e1);
+        UserEntity foundUserEntity = userEntityRepository.findByEmail(savedUserEntity.getEmail()).orElse(new UserEntity());
 
         // Assert
-        assertNotNull(foundEmployee);
-        assertEquals(e1.getFirstname(), foundEmployee.getFirstname());
-        assertEquals(e1.getLastname(), foundEmployee.getLastname());
-        assertEquals(e1.getEmail(), foundEmployee.getEmail());
+        assertNotNull(foundUserEntity);
+        assertEquals(e1.getFirstname(), foundUserEntity.getFirstname());
+        assertEquals(e1.getLastname(), foundUserEntity.getLastname());
+        assertEquals(e1.getEmail(), foundUserEntity.getEmail());
     }
 
     @Test
     void should_UpdateEmployee_When_ValidIDAndEmployeeDTOGiven() {
         // Arrange
-        Employee e1 = Employee.builder()
-                .userId(UUID.randomUUID().toString())
+        UserEntity e1 = UserEntity.builder()
+                .userID(UUID.randomUUID().toString())
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
                 .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
-        Employee updatedEmp = Employee.builder()
-                .userId(e1.getUserId())
+        UserEntity updatedEmp = UserEntity.builder()
+                .userID(e1.getUserID())
                 .firstname("Brandon")
                 .lastname("Bryan")
                 .email("john@petwell.com")
                 .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
         // Act
-        Employee savedEmployee = employeeRepository.save(e1);
-        Employee existingEmployee = employeeRepository.findById(savedEmployee.getId()).orElse(new Employee());
-        updatedEmp.setId(existingEmployee.getId());
-        Employee updatedEmployee = employeeRepository.save(updatedEmp);
+        UserEntity savedUserEntity = userEntityRepository.save(e1);
+        UserEntity existingUserEntity = userEntityRepository.findById(savedUserEntity.getId()).orElse(new UserEntity());
+        updatedEmp.setId(existingUserEntity.getId());
+        UserEntity updatedUserEntity = userEntityRepository.save(updatedEmp);
 
         // Assert
-        assertNotNull(existingEmployee);
-        assertNotNull(updatedEmployee);
-        assertEquals(savedEmployee.getId(), updatedEmployee.getId());
-        assertEquals(savedEmployee.getEmail(), updatedEmployee.getEmail());
+        assertNotNull(existingUserEntity);
+        assertNotNull(updatedUserEntity);
+        assertEquals(savedUserEntity.getId(), updatedUserEntity.getId());
+        assertEquals(savedUserEntity.getEmail(), updatedUserEntity.getEmail());
     }
 
     @Test
     void should_DeleteEmployee_When_ValidIDGiven() {
         // Arrange
-        Employee e1 = Employee.builder()
-                .userId(UUID.randomUUID().toString())
+        UserEntity e1 = UserEntity.builder()
+                .userID(UUID.randomUUID().toString())
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
                 .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
         // Act
-        Employee savedEmployee = employeeRepository.save(e1);
-        employeeRepository.deleteById(savedEmployee.getId());
-        List<Employee> employeeEntities = employeeRepository.findAll();
+        UserEntity savedUserEntity = userEntityRepository.save(e1);
+        userEntityRepository.deleteById(savedUserEntity.getId());
+        List<UserEntity> userEntityEntities = userEntityRepository.findAll();
 
         // Assert
-        assertTrue(employeeEntities.isEmpty());
+        assertTrue(userEntityEntities.isEmpty());
     }
 
     @Test
     void should_ReturnTrue_When_EmployeeEmailExistsInDatabase() {
         // Arrange
-        Employee e1 = Employee.builder()
-                .userId(UUID.randomUUID().toString())
+        UserEntity e1 = UserEntity.builder()
+                .userID(UUID.randomUUID().toString())
                 .firstname("John")
                 .lastname("Doe")
                 .email("john@petwell.com")
                 .password("password")
-                .jobTitle(VETERINARIAN_TECHNICIAN)
                 .role(Role.builder().roleType(ADMIN).build())
                 .build();
 
         // Act
-        employeeRepository.save(e1);
-        boolean isEmailPresent = employeeRepository.existsByEmail("john@petwell.com");
+        userEntityRepository.save(e1);
+        boolean isEmailPresent = userEntityRepository.existsByEmail("john@petwell.com");
 
         // Assert
         assertTrue(isEmailPresent);
-        assertEquals(1, employeeRepository.count());
+        assertEquals(1, userEntityRepository.count());
     }
 
     @Test
@@ -235,7 +225,7 @@ class EmployeeRepositoryTest {
         String nonExistingEmail = "brandon@petwell.com";
 
         // Act
-        boolean isEmailPresent = employeeRepository.existsByEmail(nonExistingEmail);
+        boolean isEmailPresent = userEntityRepository.existsByEmail(nonExistingEmail);
 
         // Assert
         assertFalse(isEmailPresent);

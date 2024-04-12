@@ -62,8 +62,10 @@ public class JwtServiceImpl extends JwtConfig implements JwtService {
     private final BiConsumer<HttpServletResponse, UserDetails> createJWTCookie = (response, user) -> {
         Cookie cookie = new Cookie("access_token", generateJwtTokenForCookie(user, Token::accessToken));
         cookie.setHttpOnly(true);
-        cookie.setMaxAge(2 * 60 * 60);
         cookie.setPath("/");
+        cookie.setDomain("localhost");
+        cookie.setSecure(false);
+        cookie.setMaxAge(2 * 60 * 60);
         cookie.setAttribute("SameSite", NONE.name());
         response.addCookie(cookie);
     };
